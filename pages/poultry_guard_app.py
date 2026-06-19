@@ -525,7 +525,7 @@ elif page == "🔬 Diagnose Bird":
     image = None
 
     if input_method == "📁 Upload from device":
-        uploaded_file = st.file_uploader("Select a photo", type=["jpg", "jpeg", "png", "webp"])
+        uploaded_file = st.file_uploader("Select a photo", type=["jpg", "jpeg", "png"])
         if uploaded_file is not None:
             image = Image.open(uploaded_file).convert("RGB")
     else:
