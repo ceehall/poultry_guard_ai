@@ -534,7 +534,7 @@ elif page == "🔬 Diagnose Bird":
 
         with col_img:
             st.markdown('<div class="section-header">Image Preview</div>', unsafe_allow_html=True)
-            st.image(image, caption="Original image", use_container_width=True)
+            st.image(image, caption="Original image")
 
         with col_result:
             st.markdown('<div class="section-header">Diagnosis Result</div>', unsafe_allow_html=True)
