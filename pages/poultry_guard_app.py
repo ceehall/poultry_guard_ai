@@ -8,6 +8,7 @@ import torch.nn as nn
 from torchvision import models, transforms
 from pathlib import Path
 import time
+import os
 
 # ─────────────────────────────────────────────────────────────
 #  PAGE CONFIG  (must be the very first Streamlit call)
@@ -19,9 +20,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-import os
-
-model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'your_model.pth')
+model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'best_vetai_vision_model.pth'),
 model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 # ─────────────────────────────────────────────────────────────
 #  CUSTOM CSS
