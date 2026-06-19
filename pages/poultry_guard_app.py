@@ -20,15 +20,13 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'best_vetai_vision_model.pth'),
-model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 # ─────────────────────────────────────────────────────────────
 #  CUSTOM CSS
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 /* ── Google Font ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght=400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
@@ -320,19 +318,25 @@ def calculate_flock_risk_score(cv_probability, disease_class, bird_age_weeks, hu
 def load_production_models():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    models_dir = os.path.join(script_dir, '..', 'models')
+    
     # Gatekeeper Validation Model
     gatekeeper = models.mobilenet_v3_small(weights=None)
     in_features = gatekeeper.classifier[3].in_features
     gatekeeper.classifier[3] = nn.Linear(in_features, 2)
     
-    if Path("gatekeeper_guard.pth").exists():
-        gatekeeper.load_state_dict(torch.load("gatekeeper_guard.pth", map_location=device))
+    gatekeeper_path = os.path.join(models_dir, "gatekeeper_guard.pth")
+    if os.path.exists(gatekeeper_path):
+        gatekeeper.load_state_dict(torch.load(gatekeeper_path, map_location=device))
     gatekeeper.eval()
     
     # Disease Classification Model
     classifier = PoultryDiseaseClassifier(num_classes=len(CLASS_NAMES))
-    if Path("best_vetai_vision_model.pth").exists():
-        classifier.load_state_dict(torch.load("best_vetai_vision_model.pth", map_location=device))
+    classifier_path = os.path.join(models_dir, "best_vetai_vision_model.pth")
+    if os.path.exists(classifier_path):
+        classifier.load_state_dict(torch.load(classifier_path, map_location=device))
     classifier.eval()
     
     return gatekeeper, classifier, device
@@ -349,7 +353,7 @@ def predict_pipeline(pil_image):
     # Resolve the predicted string class from our dictionary mapping
     predicted_label = GATEKEEPER_CLASSES.get(gate_class_index, "Unknown")
     
-    if predicted_label == INVALID_CLASS_NAME and Path("gatekeeper_guard.pth").exists():
+    if predicted_label == INVALID_CLASS_NAME:
          return f"❌ Failed Gatekeeper Validation (Detected: {predicted_label})", 0.0, pil_image
 
     # ── STAGE 2: Geometric Structural Check ──
@@ -360,9 +364,6 @@ def predict_pipeline(pil_image):
     processed_roi_img = isolate_region_of_interest_from_pil(pil_image)
 
     # ── STAGE 4: Final Disease Inference ──
-    if not Path("best_vetai_vision_model.pth").exists():
-        return "⚠️ Model weights missing", 0.0, processed_roi_img
-
     roi_tensor = TRANSFORM(processed_roi_img).unsqueeze(0).to(compute_device)
     with torch.no_grad():
         outputs = main_classifier(roi_tensor)
@@ -537,7 +538,7 @@ elif page == "🔬 Diagnose Bird":
 
         with col_img:
             st.markdown('<div class="section-header">Image Preview</div>', unsafe_allow_html=True)
-            st.image(image, caption="Original image")
+            st.image(image, caption="Original image", use_column_width=True)
 
         with col_result:
             st.markdown('<div class="section-header">Diagnosis Result</div>', unsafe_allow_html=True)
@@ -552,8 +553,6 @@ elif page == "🔬 Diagnose Bird":
                     st.error(f"**Image rejected by Verification Architecture:**\n\n{predicted_class}")
                     st.warning("Please ensure you upload a clear photo of valid poultry fecal matter.")
                 
-                elif predicted_class == "⚠️ Model weights missing":
-                    st.warning("**Model weights file not found.** Ensure `.pth` files are in the directory.")
                 else:
                     info = DISEASE_INFO.get(predicted_class)
                     st.image(processed_roi, caption="Isolated Region of Interest (ROI) Analysis Target", width=180)
