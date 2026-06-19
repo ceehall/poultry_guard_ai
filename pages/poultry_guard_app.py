@@ -19,6 +19,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+import os
+
+model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'your_model.pth')
+model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
 # ─────────────────────────────────────────────────────────────
 #  CUSTOM CSS
 # ─────────────────────────────────────────────────────────────
